@@ -1,0 +1,48 @@
+                <div class="fade-in">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-800">${currentLanguage === 'en' ? '🩹 First Aid Box Inspection' : '🩹 Inspeksi P3K'}</h1>
+                        <p class="text-gray-500">${currentLanguage === 'en' ? 'First aid box inspection form based on Ministerial Regulation No. 15/2008' : 'Form inspeksi Kotak P3K sesuai Permenaker No. 15 Tahun 2008'}</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <form id="p3k-form" onsubmit="submitInspeksiP3K(event)">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'First Aid Box Location' : 'Lokasi Kotak P3K'}</label>
+                                    <input type="text" name="location" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="${currentLanguage === 'en' ? 'Example: Production Room A' : 'Contoh: Ruang Produksi A'}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'First Aid Box Type' : 'Tipe Kotak P3K'}</label>
+                                    <select name="box_type" required onchange="updateP3KChecklist(this.value)" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white">
+                                        <option value="">${t('option_select_box_type')}</option>
+                                        <option value="A">${currentLanguage === 'en' ? 'Type A (1-25 workers)' : 'Tipe A (Tenaga Kerja 1-25 orang)'}</option>
+                                        <option value="B">${currentLanguage === 'en' ? 'Type B (26-50 workers)' : 'Tipe B (Tenaga Kerja 26-50 orang)'}</option>
+                                        <option value="C">${currentLanguage === 'en' ? 'Type C (51-100 workers)' : 'Tipe C (Tenaga Kerja 51-100 orang)'}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="p3k-checklist" class="mb-4 hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">${currentLanguage === 'en' ? 'First Aid Box Checklist' : 'Checklist Isi Kotak P3K'}</label>
+                                <div class="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="border-b border-gray-200">
+                                                <th class="text-left py-2 font-medium text-gray-700">${currentLanguage === 'en' ? 'Item' : 'Isi Kotak'}</th>
+                                                <th class="text-center py-2 font-medium text-gray-700 w-20">${currentLanguage === 'en' ? 'Qty' : 'Jumlah'}</th>
+                                                <th class="text-center py-2 font-medium text-gray-700 w-32">${currentLanguage === 'en' ? 'Condition' : 'Kondisi'}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="p3k-items-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Additional Notes' : 'Catatan Tambahan'}</label>
+                                <textarea name="notes" rows="3" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="${currentLanguage === 'en' ? 'Add notes if needed' : 'Tambahkan catatan jika diperlukan'}"></textarea>
+                            </div>
+                            <button type="submit" id="p3k-submit-btn" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-lg font-semibold hover:from-emerald-600 hover:to-teal-600 transition-all">
+                                ${t('btn_submit_inspection')}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            
