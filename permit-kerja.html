@@ -1,0 +1,63 @@
+                <div class="fade-in">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-800">${currentLanguage === 'en' ? '📋 Work Permit' : '📋 Permit Kerja'}</h1>
+                        <p class="text-gray-500">Form pengajuan izin kerja berbahaya</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <form id="permit-form" onsubmit="submitPermitKerja(event)">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Work Type' : 'Jenis Pekerjaan'}</label>
+                                    <select name="work_type" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white">
+                                        <option value="">${t('option_select_type')}</option>
+                                        <option value="Pekerjaan Panas">Pekerjaan Panas (Hot Work)</option>
+                                        <option value="Bekerja di Ketinggian">Bekerja di Ketinggian (Working at Height)</option>
+                                        <option value="Ruang Terbatas">Ruang Terbatas (Confined Space)</option>
+                                        <option value="Pekerjaan Listrik">Pekerjaan Listrik (Electrical Work)</option>
+                                        <option value="Penggalian">Penggalian (Excavation)</option>
+                                        <option value="Lainnya">${currentLanguage === 'en' ? 'Others' : 'Lainnya'}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Department' : 'Departemen'}</label>
+                                    <select name="department" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white">
+                                        <option value="">${t('option_select_department')}</option>
+                                        ${getDepartmentOptions()}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Work Location' : 'Lokasi Pekerjaan'}</label>
+                                    <input type="text" name="location" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="${currentLanguage === 'en' ? 'Example: Boiler Area' : 'Contoh: Area Boiler'}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Work Date' : 'Tanggal Pelaksanaan'}</label>
+                                    <input type="date" name="work_date" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Start Time' : 'Waktu Mulai'}</label>
+                                    <input type="time" name="start_time" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'End Time' : 'Waktu Selesai'}</label>
+                                    <input type="time" name="end_time" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Work Description' : 'Uraian Pekerjaan'}</label>
+                                <textarea name="work_description" rows="3" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="${currentLanguage === 'en' ? 'Describe detailed work to be performed' : 'Jelaskan detail pekerjaan yang akan dilakukan'}"></textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Workers Involved' : 'Nama Pekerja yang Terlibat'}</label>
+                                <textarea name="workers" rows="2" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="${currentLanguage === 'en' ? 'Comma separated, example: John, Sarah, Mike' : 'Pisahkan dengan koma, contoh: Budi, Andi, Sari'}"></textarea>
+                            </div>
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Required PPE' : 'APD yang Diperlukan'}</label>
+                                <textarea name="required_ppe" rows="2" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="${currentLanguage === 'en' ? 'Example: Helmet, Gloves, Safety glasses' : 'Contoh: Helm, Sarung tangan, Kacamata safety'}"></textarea>
+                            </div>
+                            <button type="submit" id="permit-submit-btn" class="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-indigo-600 transition-all">
+                                ${t('btn_submit_permit')}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            

@@ -1,0 +1,69 @@
+                <div class="fade-in">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-800">${currentLanguage === 'en' ? '🦺 PPE Request' : '🦺 Request APD'}</h1>
+                        <p class="text-gray-500">${currentLanguage === 'en' ? 'Personal Protective Equipment request form' : 'Form permintaan Alat Pelindung Diri'}</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <form id="apd-form" onsubmit="submitRequestAPD(event)">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'PPE Type' : 'Jenis APD'}</label>
+                                    <select name="apd_type" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white">
+                                        <option value="">${currentLanguage === 'en' ? 'Select PPE Type' : 'Pilih Jenis APD'}</option>
+                                        <option value="Helm Safety">${currentLanguage === 'en' ? 'Safety Helmet' : 'Helm Safety'}</option>
+                                        <option value="Kacamata Safety">${currentLanguage === 'en' ? 'Safety Googles' : 'Kacamata Safety'}</option>
+                                        <option value="Masker">Masker</option>
+                                        <option value="Earplug/Earmuff">Earplug/Earmuff</option>
+                                        <option value="Sarung Tangan">${currentLanguage === 'en' ? 'Hand Gloves' : 'Sarung Tangan'}</option>
+                                        <option value="Sepatu Safety">${currentLanguage === 'en' ? 'Safety Shoes' : 'Sepatu Safety'}</option>
+                                        <option value="Rompi Safety">${currentLanguage === 'en' ? 'Safety Vest' : 'Rompi Safety'}</option>
+                                        <option value="Full Body Harness">Full Body Harness</option>
+                                        <option value="Respirator">Respirator</option>
+                                        <option value="Lainnya">${currentLanguage === 'en' ? 'Others' : 'Lainnya'}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Quantity' : 'Jumlah'}</label>
+                                    <input type="number" name="quantity" min="1" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Size (if present)' : 'Ukuran (jika ada)'}</label>
+                                    <select name="size" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white">
+                                        <option value="">${currentLanguage === 'en' ? 'Select Size' : 'Pilih Ukuran'}</option>
+                                        <option value="S">S</option>
+                                        <option value="M">M</option>
+                                        <option value="L">L</option>
+                                        <option value="XL">XL</option>
+                                        <option value="XXL">XXL</option>
+                                        <option value="Free Size">Free Size</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Department' : 'Departemen'}</label>
+                                    <select name="department" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white">
+                                        <option value="">${t('option_select_department')}</option>
+                                        ${getDepartmentOptions()}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Request Reason' : 'Alasan Permintaan'}</label>
+                                <select name="reason" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white">
+                                    <option value="">${currentLanguage === 'en' ? 'Select Reason' : 'Pilih Alasan'}</option>
+                                    <option value="Baru - Belum Punya">${currentLanguage === 'en' ? 'New - Not Yet Available' : 'Baru - Belum Punya'}</option>
+                                    <option value="Penggantian - Rusak">${currentLanguage === 'en' ? 'Replacement - Damaged' : 'Penggantian - Rusak'}</option>
+                                    <option value="Penggantian - Hilang">${currentLanguage === 'en' ? 'Replacement - Lost' : 'Penggantian - Hilang'}</option>
+                                    <option value="Penggantian - Tidak Layak">${currentLanguage === 'en' ? 'Replacement - Unusable' : 'Penggantian - Tidak Layak Pakai'}</option>
+                                </select>
+                            </div>
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${currentLanguage === 'en' ? 'Additional Information' : 'Keterangan Tambahan'}</label>
+                                <textarea name="notes" rows="3" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="${currentLanguage === 'en' ? 'Add information if needed' : 'Tambahkan keterangan jika diperlukan'}"></textarea>
+                            </div>
+                            <button type="submit" id="apd-submit-btn" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all">
+                                ${t('btn_submit_apd')}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            
