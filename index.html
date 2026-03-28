@@ -1437,6 +1437,9 @@
             return `${(kb / 1024).toFixed(2)} MB`;
         }
 
+        const UNSAFE_PHOTO_MAX_MB = 10;
+        const UNSAFE_PHOTO_MAX_BYTES = UNSAFE_PHOTO_MAX_MB * 1024 * 1024;
+
         function resetUnsafePhotoState() {
             unsafePhotoState = { name: '', size: 0, mimeType: '', dataUrl: '' };
         }
@@ -1511,9 +1514,13 @@
                 return;
             }
 
-            const maxBytes = 2 * 1024 * 1024;
-            if (file.size > maxBytes) {
-                showToast(currentLanguage === 'en' ? 'Maximum file size is 2 MB.' : 'Ukuran file maksimum 2 MB.', 'error');
+            if (file.size > UNSAFE_PHOTO_MAX_BYTES) {
+                showToast(
+                    currentLanguage === 'en'
+                        ? `Maximum file size is ${UNSAFE_PHOTO_MAX_MB} MB.`
+                        : `Ukuran file maksimum ${UNSAFE_PHOTO_MAX_MB} MB.`,
+                    'error'
+                );
                 input.value = '';
                 return;
             }
