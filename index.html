@@ -26,6 +26,12 @@
         .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
         .submenu.open { max-height: 500px; }
         input:focus, select:focus, textarea:focus { outline: none; ring: 2px; ring-color: #10b981; }
+        .photo-src-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #fcd34d; color: #92400e; background: #fffbeb; border-radius: 10px; padding: 10px 12px; font-size: 14px; font-weight: 600; transition: all 0.2s ease; }
+        .photo-src-btn:hover { background: #fef3c7; border-color: #f59e0b; }
+        .photo-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 16px; text-align: center; background: #f9fafb; cursor: pointer; transition: all 0.2s ease; }
+        .photo-zone:hover { border-color: #f59e0b; background: #fffbeb; }
+        .photo-zone.drag-over { border-color: #f59e0b; background: #fffbeb; }
+        .photo-zone img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 10px; display: none; }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #10b981; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -153,6 +159,12 @@
         let allReports = [];
         let currentPage = 'dashboard';
         const menuTemplateCache = {};
+        let unsafePhotoState = {
+            name: '',
+            size: 0,
+            mimeType: '',
+            dataUrl: ''
+        };
 
    
         let currentLanguage = 'id';
@@ -353,6 +365,10 @@
                         priority: r.priority || 'Normal',
                         details: r.details || '',
                         description: r.description || '',
+                        photoName: r.photo_name || r.photoName || '',
+                        photoMimeType: r.photo_mime_type || r.photoMimeType || '',
+                        photoData: r.photo_data || r.photoData || '',
+                        photoUrl: r.photo_url || r.photoUrl || '',
                         boxType: r.box_type || '',
                         itemsStatus: r.items_status || '',
                         adminNotes: r.admin_notes || '',
@@ -1311,6 +1327,134 @@
         async function renderKondisiTidakAman() {
             const content = document.getElementById('content-area');
             content.innerHTML = await loadMenuPageTemplate('kondisi-tidak-aman', {});
+            resetUnsafePhotoState();
+            renderUnsafePhotoPreview();
+        }
+
+        function triggerCamera() {
+            document.getElementById('input-camera')?.click();
+        }
+
+        function triggerGallery() {
+            document.getElementById('input-gallery')?.click();
+        }
+
+        function formatUnsafePhotoSize(bytes) {
+            if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+            const kb = bytes / 1024;
+            if (kb < 1024) return `${kb.toFixed(1)} KB`;
+            return `${(kb / 1024).toFixed(2)} MB`;
+        }
+
+        function resetUnsafePhotoState() {
+            unsafePhotoState = { name: '', size: 0, mimeType: '', dataUrl: '' };
+        }
+
+        function renderUnsafePhotoPreview() {
+            const preview = document.getElementById('photo-preview');
+            const placeholder = document.getElementById('photo-placeholder');
+            const info = document.getElementById('photo-info');
+            const name = document.getElementById('photo-name');
+            const size = document.getElementById('photo-size');
+            const removeBtn = document.getElementById('remove-photo');
+
+            if (!preview || !placeholder || !info || !name || !size || !removeBtn) return;
+
+            if (!unsafePhotoState.dataUrl) {
+                preview.style.display = 'none';
+                preview.src = '';
+                placeholder.classList.remove('hidden');
+                info.classList.add('hidden');
+                removeBtn.classList.add('hidden');
+                return;
+            }
+
+            preview.src = unsafePhotoState.dataUrl;
+            preview.style.display = 'block';
+            placeholder.classList.add('hidden');
+            info.classList.remove('hidden');
+            removeBtn.classList.remove('hidden');
+            name.textContent = unsafePhotoState.name;
+            size.textContent = `${formatUnsafePhotoSize(unsafePhotoState.size)} • ${unsafePhotoState.mimeType}`;
+        }
+
+        async function compressUnsafePhoto(file) {
+            const imageBitmap = await createImageBitmap(file);
+            const maxWidth = 1280;
+            const maxHeight = 1280;
+            let { width, height } = imageBitmap;
+
+            const widthRatio = maxWidth / width;
+            const heightRatio = maxHeight / height;
+            const ratio = Math.min(1, widthRatio, heightRatio);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(imageBitmap, 0, 0, width, height);
+
+            let quality = 0.85;
+            let dataUrl = canvas.toDataURL('image/jpeg', quality);
+            while (dataUrl.length > 500000 && quality > 0.55) {
+                quality -= 0.1;
+                dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+
+            return {
+                dataUrl,
+                mimeType: 'image/jpeg'
+            };
+        }
+
+        async function handleFile(input) {
+            const file = input?.files?.[0];
+            if (!file) return;
+
+            const supportedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!supportedTypes.includes(file.type)) {
+                showToast(currentLanguage === 'en' ? 'Only JPG, PNG, and WEBP files are allowed.' : 'Hanya file JPG, PNG, dan WEBP yang diperbolehkan.', 'error');
+                input.value = '';
+                return;
+            }
+
+            const maxBytes = 2 * 1024 * 1024;
+            if (file.size > maxBytes) {
+                showToast(currentLanguage === 'en' ? 'Maximum file size is 2 MB.' : 'Ukuran file maksimum 2 MB.', 'error');
+                input.value = '';
+                return;
+            }
+
+            try {
+                const compressed = await compressUnsafePhoto(file);
+                unsafePhotoState = {
+                    name: file.name,
+                    size: file.size,
+                    mimeType: compressed.mimeType,
+                    dataUrl: compressed.dataUrl
+                };
+                renderUnsafePhotoPreview();
+            } catch (error) {
+                console.error('Failed processing image:', error);
+                showToast(currentLanguage === 'en' ? 'Failed to process image file.' : 'Gagal memproses file gambar.', 'error');
+            } finally {
+                input.value = '';
+            }
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget?.classList.remove('drag-over');
+            const file = event.dataTransfer?.files?.[0];
+            if (!file) return;
+            handleFile({ files: [file], value: '' });
+        }
+
+        function removePhoto() {
+            resetUnsafePhotoState();
+            renderUnsafePhotoPreview();
         }
 
         async function submitKondisiTidakAman(e) {
@@ -1327,6 +1471,14 @@
                 return;
             }
 
+            const detailsParts = [`Tingkat: ${form.severity.value}`];
+            if (form.suggestion.value.trim()) {
+                detailsParts.push(`Saran: ${form.suggestion.value.trim()}`);
+            }
+            if (unsafePhotoState.name) {
+                detailsParts.push(`Foto: ${unsafePhotoState.name}`);
+            }
+
             const data = {
                 type: 'Kondisi Tidak Aman',
                 category: form.category.value,
@@ -1335,9 +1487,13 @@
                 reporter_name: currentUser.name,
                 report_date: getReportDateTime(),
                 status: 'Menunggu Konfirmasi',
-                details: `Tingkat: ${form.severity.value}`,
+                details: detailsParts.join(' | '),
                 description: form.description.value,
                 priority: form.severity.value,
+                photo_name: unsafePhotoState.name,
+                photo_mime_type: unsafePhotoState.mimeType,
+                photo_data: unsafePhotoState.dataUrl ? unsafePhotoState.dataUrl.split(',')[1] : '',
+                photo_url: '',
                 admin_notes: '',
                 completed_date: ''
             };
@@ -1349,6 +1505,7 @@
             if (result.isOk) {
                 showToast(currentLanguage === 'en' ? 'Unsafe condition report submitted successfully!' : 'Laporan kondisi tidak aman berhasil dikirim!');
                 form.reset();
+                removePhoto();
             } else {
                 showToast(t('toast_send_failed'), 'error');
             }
@@ -1502,6 +1659,7 @@
         function viewReport(id) {
             const report = allReports.find(r => r.__backendId === id);
             if (!report) return;
+            const photoUrl = report.photo_url || report.photoUrl || (report.photo_data && (report.photo_mime_type || report.photoMimeType) ? `data:${report.photo_mime_type || report.photoMimeType};base64,${report.photo_data}` : '');
             
             const modal = document.getElementById('modal-container');
             modal.innerHTML = `
@@ -1528,6 +1686,7 @@
                             </div>
                             <div><p class="text-xs text-gray-500 mb-1">Detail</p><p class="text-sm bg-gray-50 p-3 rounded-lg">${report.details || '-'}</p></div>
                             <div><p class="text-xs text-gray-500 mb-1">Deskripsi</p><p class="text-sm bg-gray-50 p-3 rounded-lg">${report.description || '-'}</p></div>
+                            ${photoUrl ? `<div><p class="text-xs text-gray-500 mb-2">Foto</p><a href="${photoUrl}" target="_blank" rel="noopener noreferrer"><img src="${photoUrl}" alt="Foto Kondisi Tidak Aman" class="w-full max-h-80 object-contain rounded-lg border border-gray-200 bg-gray-50"></a></div>` : ''}
                             ${report.admin_notes ? `<div><p class="text-xs text-gray-500 mb-1">Catatan Admin</p><p class="text-sm bg-blue-50 p-3 rounded-lg">${report.admin_notes}</p></div>` : ''}
                         </div>
                     </div>
