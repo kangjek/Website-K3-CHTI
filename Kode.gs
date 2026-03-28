@@ -206,12 +206,12 @@ function doPost(e) {
       // Opsional: validasi ukuran file jika frontend mengirimkan `size` (bytes)
       if (typeof data.size !== 'undefined' && data.size !== null && data.size !== '') {
         const sizeNum = Number(data.size);
-        const maxBytes = 2 * 1024 * 1024; // 2MB
+        const maxBytes = 10 * 1024 * 1024; // 10MB
         if (!Number.isFinite(sizeNum) || sizeNum < 0) {
           return createApiOutput({ status: 'error', message: 'Nilai size tidak valid' });
         }
         if (sizeNum > maxBytes) {
-          return createApiOutput({ status: 'error', message: 'Ukuran file melebihi batas 2MB' });
+          return createApiOutput({ status: 'error', message: 'Ukuran file melebihi batas 10MB' });
         }
       }
       
