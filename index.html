@@ -345,6 +345,68 @@
         // Google Sheets Sync Config - UPDATE THIS WITH YOUR DEPLOYMENT URL
         const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbzTG9Hs62r2eDumzLAFvgLDwdUHBLQV-5tC12XajU0u_dY2Y8PPq-US2GXiycsEzav7/exec';
 
+        async function uploadPhotoToGoogleDrive(photoState) {
+            if (!photoState?.dataUrl) return { isOk: true, photoUrl: '' };
+
+            const base64 = photoState.dataUrl.split(',')[1] || '';
+            if (!base64) return { isOk: true, photoUrl: '' };
+
+            try {
+                const response = await fetch(GOOGLE_SHEETS_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'uploadPhoto',
+                        base64,
+                        fileName: photoState.name || `unsafe-photo-${Date.now()}.jpg`,
+                        mimeType: photoState.mimeType || 'image/jpeg',
+                        size: Number(photoState.size || 0)
+                    })
+                });
+
+                const payload = await response.json();
+                if (payload.status !== 'success') {
+                    throw new Error(payload.message || 'Upload photo gagal');
+                }
+
+                return { isOk: true, photoUrl: payload.directUrl || payload.viewUrl || '' };
+            } catch (error) {
+                console.error('Upload photo ke Drive gagal:', error);
+                return { isOk: false, error };
+            }
+        }
+
+        function extractDriveFileId(url) {
+            if (!url) return '';
+            const value = String(url);
+            const patterns = [
+                /\/file\/d\/([a-zA-Z0-9_-]+)/,
+                /[?&]id=([a-zA-Z0-9_-]+)/,
+                /\/uc\?.*?[?&]id=([a-zA-Z0-9_-]+)/,
+                /\/d\/([a-zA-Z0-9_-]+)/
+            ];
+
+            for (const pattern of patterns) {
+                const match = value.match(pattern);
+                if (match && match[1]) return match[1];
+            }
+            return '';
+        }
+
+        function normalizePhotoUrlForPreview(url) {
+            if (!url) return '';
+            const value = String(url).trim();
+            if (!value) return '';
+            if (value.startsWith('data:image/')) return value;
+
+            const driveFileId = extractDriveFileId(value);
+            if (driveFileId) {
+                return `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1600`;
+            }
+
+            return value;
+        }
+
         // Sync reports to Google Sheets
         async function syncToGoogleSheets(reports) {
             if (!reports || reports.length === 0) return;
@@ -369,6 +431,7 @@
                         photoMimeType: r.photo_mime_type || r.photoMimeType || '',
                         photoData: r.photo_data || r.photoData || '',
                         photoUrl: r.photo_url || r.photoUrl || '',
+                        photoUrls: r.photo_urls || (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : []),
                         boxType: r.box_type || '',
                         itemsStatus: r.items_status || '',
                         adminNotes: r.admin_notes || '',
@@ -419,7 +482,15 @@
                 window[callbackName] = (payload) => {
                     cleanup();
                     if (payload?.status === 'success' && Array.isArray(payload.reports)) {
-                        resolve(payload.reports.filter(r => r.__backendId));
+                        resolve(
+                            payload.reports
+                                .filter(r => r.__backendId)
+                                .map(r => ({
+                                    ...r,
+                                    photo_url: r.photo_url || r.photoUrl || (Array.isArray(r.photo_urls) ? (r.photo_urls[0] || '') : ''),
+                                    photo_urls: Array.isArray(r.photo_urls) ? r.photo_urls : (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : [])
+                                }))
+                        );
                     } else {
                         reject(new Error('Format respons JSONP tidak valid'));
                     }
@@ -452,7 +523,13 @@
                     throw new Error('Format respons tidak valid');
                 }
 
-                return payload.reports.filter(r => r.__backendId);
+                return payload.reports
+                    .filter(r => r.__backendId)
+                    .map(r => ({
+                        ...r,
+                        photo_url: r.photo_url || r.photoUrl || (Array.isArray(r.photo_urls) ? (r.photo_urls[0] || '') : ''),
+                        photo_urls: Array.isArray(r.photo_urls) ? r.photo_urls : (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : [])
+                    }));
             } catch (error) {
                 console.warn('Fetch CORS gagal, coba fallback JSONP:', error);
                 try {
@@ -540,7 +617,15 @@
                 window[callbackName] = (payload) => {
                     cleanup();
                     if (payload?.status === 'success' && Array.isArray(payload.reports)) {
-                        resolve(payload.reports.filter(r => r.__backendId));
+                        resolve(
+                            payload.reports
+                                .filter(r => r.__backendId)
+                                .map(r => ({
+                                    ...r,
+                                    photo_url: r.photo_url || r.photoUrl || (Array.isArray(r.photo_urls) ? (r.photo_urls[0] || '') : ''),
+                                    photo_urls: Array.isArray(r.photo_urls) ? r.photo_urls : (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : [])
+                                }))
+                        );
                     } else {
                         reject(new Error('Format respons JSONP tidak valid'));
                     }
@@ -573,7 +658,13 @@
                     throw new Error('Format respons tidak valid');
                 }
 
-                return payload.reports.filter(r => r.__backendId);
+                return payload.reports
+                    .filter(r => r.__backendId)
+                    .map(r => ({
+                        ...r,
+                        photo_url: r.photo_url || r.photoUrl || (Array.isArray(r.photo_urls) ? (r.photo_urls[0] || '') : ''),
+                        photo_urls: Array.isArray(r.photo_urls) ? r.photo_urls : (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : [])
+                    }));
             } catch (error) {
                 console.warn('Fetch CORS gagal, coba fallback JSONP:', error);
                 try {
@@ -1479,6 +1570,21 @@
                 detailsParts.push(`Foto: ${unsafePhotoState.name}`);
             }
 
+            let uploadedPhotoUrl = '';
+            if (unsafePhotoState.dataUrl) {
+                const uploadResult = await uploadPhotoToGoogleDrive(unsafePhotoState);
+                if (!uploadResult.isOk) {
+                    showToast(currentLanguage === 'en'
+                        ? 'Photo upload failed. Please check Apps Script deployment and Drive permissions.'
+                        : 'Upload foto gagal. Cek deployment Apps Script dan izin Google Drive.',
+                    'error');
+                    btn.disabled = false;
+                    btn.innerHTML = t('btn_submit_report');
+                    return;
+                }
+                uploadedPhotoUrl = uploadResult.photoUrl || '';
+            }
+
             const data = {
                 type: 'Kondisi Tidak Aman',
                 category: form.category.value,
@@ -1493,7 +1599,8 @@
                 photo_name: unsafePhotoState.name,
                 photo_mime_type: unsafePhotoState.mimeType,
                 photo_data: unsafePhotoState.dataUrl ? unsafePhotoState.dataUrl.split(',')[1] : '',
-                photo_url: '',
+                photo_url: uploadedPhotoUrl,
+                photo_urls: uploadedPhotoUrl ? [uploadedPhotoUrl] : [],
                 admin_notes: '',
                 completed_date: ''
             };
@@ -1659,7 +1766,12 @@
         function viewReport(id) {
             const report = allReports.find(r => r.__backendId === id);
             if (!report) return;
-            const photoUrl = report.photo_url || report.photoUrl || (report.photo_data && (report.photo_mime_type || report.photoMimeType) ? `data:${report.photo_mime_type || report.photoMimeType};base64,${report.photo_data}` : '');
+            const rawPhotoUrl = report.photo_url
+                || report.photoUrl
+                || (Array.isArray(report.photo_urls) ? (report.photo_urls[0] || '') : '')
+                || (Array.isArray(report.photoUrls) ? (report.photoUrls[0] || '') : '')
+                || (report.photo_data && (report.photo_mime_type || report.photoMimeType) ? `data:${report.photo_mime_type || report.photoMimeType};base64,${report.photo_data}` : '');
+            const photoPreviewUrl = normalizePhotoUrlForPreview(rawPhotoUrl);
             
             const modal = document.getElementById('modal-container');
             modal.innerHTML = `
@@ -1686,7 +1798,7 @@
                             </div>
                             <div><p class="text-xs text-gray-500 mb-1">Detail</p><p class="text-sm bg-gray-50 p-3 rounded-lg">${report.details || '-'}</p></div>
                             <div><p class="text-xs text-gray-500 mb-1">Deskripsi</p><p class="text-sm bg-gray-50 p-3 rounded-lg">${report.description || '-'}</p></div>
-                            ${photoUrl ? `<div><p class="text-xs text-gray-500 mb-2">Foto</p><a href="${photoUrl}" target="_blank" rel="noopener noreferrer"><img src="${photoUrl}" alt="Foto Kondisi Tidak Aman" class="w-full max-h-80 object-contain rounded-lg border border-gray-200 bg-gray-50"></a></div>` : ''}
+                            ${photoPreviewUrl ? `<div><p class="text-xs text-gray-500 mb-2">Foto</p><a href="${rawPhotoUrl || photoPreviewUrl}" target="_blank" rel="noopener noreferrer"><img src="${photoPreviewUrl}" alt="Foto Kondisi Tidak Aman" class="w-full max-h-80 object-contain rounded-lg border border-gray-200 bg-gray-50" onerror="this.onerror=null;this.src='${rawPhotoUrl || ''}';"></a></div>` : ''}
                             ${report.admin_notes ? `<div><p class="text-xs text-gray-500 mb-1">Catatan Admin</p><p class="text-sm bg-blue-50 p-3 rounded-lg">${report.admin_notes}</p></div>` : ''}
                         </div>
                     </div>
