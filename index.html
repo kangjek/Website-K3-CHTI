@@ -345,6 +345,37 @@
         // Google Sheets Sync Config - UPDATE THIS WITH YOUR DEPLOYMENT URL
         const GOOGLE_SHEETS_API = 'https://script.google.com/macros/s/AKfycbzTG9Hs62r2eDumzLAFvgLDwdUHBLQV-5tC12XajU0u_dY2Y8PPq-US2GXiycsEzav7/exec';
 
+        async function uploadPhotoToGoogleDrive(photoState) {
+            if (!photoState?.dataUrl) return { isOk: true, photoUrl: '' };
+
+            const base64 = photoState.dataUrl.split(',')[1] || '';
+            if (!base64) return { isOk: true, photoUrl: '' };
+
+            try {
+                const response = await fetch(GOOGLE_SHEETS_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'uploadPhoto',
+                        base64,
+                        fileName: photoState.name || `unsafe-photo-${Date.now()}.jpg`,
+                        mimeType: photoState.mimeType || 'image/jpeg',
+                        size: Number(photoState.size || 0)
+                    })
+                });
+
+                const payload = await response.json();
+                if (payload.status !== 'success') {
+                    throw new Error(payload.message || 'Upload photo gagal');
+                }
+
+                return { isOk: true, photoUrl: payload.directUrl || payload.viewUrl || '' };
+            } catch (error) {
+                console.error('Upload photo ke Drive gagal:', error);
+                return { isOk: false, error };
+            }
+        }
+
         // Sync reports to Google Sheets
         async function syncToGoogleSheets(reports) {
             if (!reports || reports.length === 0) return;
@@ -369,6 +400,7 @@
                         photoMimeType: r.photo_mime_type || r.photoMimeType || '',
                         photoData: r.photo_data || r.photoData || '',
                         photoUrl: r.photo_url || r.photoUrl || '',
+                        photoUrls: r.photo_urls || (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : []),
                         boxType: r.box_type || '',
                         itemsStatus: r.items_status || '',
                         adminNotes: r.admin_notes || '',
@@ -419,7 +451,15 @@
                 window[callbackName] = (payload) => {
                     cleanup();
                     if (payload?.status === 'success' && Array.isArray(payload.reports)) {
-                        resolve(payload.reports.filter(r => r.__backendId));
+                        resolve(
+                            payload.reports
+                                .filter(r => r.__backendId)
+                                .map(r => ({
+                                    ...r,
+                                    photo_url: r.photo_url || r.photoUrl || (Array.isArray(r.photo_urls) ? (r.photo_urls[0] || '') : ''),
+                                    photo_urls: Array.isArray(r.photo_urls) ? r.photo_urls : (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : [])
+                                }))
+                        );
                     } else {
                         reject(new Error('Format respons JSONP tidak valid'));
                     }
@@ -452,7 +492,13 @@
                     throw new Error('Format respons tidak valid');
                 }
 
-                return payload.reports.filter(r => r.__backendId);
+                return payload.reports
+                    .filter(r => r.__backendId)
+                    .map(r => ({
+                        ...r,
+                        photo_url: r.photo_url || r.photoUrl || (Array.isArray(r.photo_urls) ? (r.photo_urls[0] || '') : ''),
+                        photo_urls: Array.isArray(r.photo_urls) ? r.photo_urls : (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : [])
+                    }));
             } catch (error) {
                 console.warn('Fetch CORS gagal, coba fallback JSONP:', error);
                 try {
@@ -540,7 +586,15 @@
                 window[callbackName] = (payload) => {
                     cleanup();
                     if (payload?.status === 'success' && Array.isArray(payload.reports)) {
-                        resolve(payload.reports.filter(r => r.__backendId));
+                        resolve(
+                            payload.reports
+                                .filter(r => r.__backendId)
+                                .map(r => ({
+                                    ...r,
+                                    photo_url: r.photo_url || r.photoUrl || (Array.isArray(r.photo_urls) ? (r.photo_urls[0] || '') : ''),
+                                    photo_urls: Array.isArray(r.photo_urls) ? r.photo_urls : (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : [])
+                                }))
+                        );
                     } else {
                         reject(new Error('Format respons JSONP tidak valid'));
                     }
@@ -573,7 +627,13 @@
                     throw new Error('Format respons tidak valid');
                 }
 
-                return payload.reports.filter(r => r.__backendId);
+                return payload.reports
+                    .filter(r => r.__backendId)
+                    .map(r => ({
+                        ...r,
+                        photo_url: r.photo_url || r.photoUrl || (Array.isArray(r.photo_urls) ? (r.photo_urls[0] || '') : ''),
+                        photo_urls: Array.isArray(r.photo_urls) ? r.photo_urls : (r.photo_url || r.photoUrl ? [r.photo_url || r.photoUrl] : [])
+                    }));
             } catch (error) {
                 console.warn('Fetch CORS gagal, coba fallback JSONP:', error);
                 try {
@@ -1479,6 +1539,21 @@
                 detailsParts.push(`Foto: ${unsafePhotoState.name}`);
             }
 
+            let uploadedPhotoUrl = '';
+            if (unsafePhotoState.dataUrl) {
+                const uploadResult = await uploadPhotoToGoogleDrive(unsafePhotoState);
+                if (!uploadResult.isOk) {
+                    showToast(currentLanguage === 'en'
+                        ? 'Photo upload failed. Please check Apps Script deployment and Drive permissions.'
+                        : 'Upload foto gagal. Cek deployment Apps Script dan izin Google Drive.',
+                    'error');
+                    btn.disabled = false;
+                    btn.innerHTML = t('btn_submit_report');
+                    return;
+                }
+                uploadedPhotoUrl = uploadResult.photoUrl || '';
+            }
+
             const data = {
                 type: 'Kondisi Tidak Aman',
                 category: form.category.value,
@@ -1493,7 +1568,8 @@
                 photo_name: unsafePhotoState.name,
                 photo_mime_type: unsafePhotoState.mimeType,
                 photo_data: unsafePhotoState.dataUrl ? unsafePhotoState.dataUrl.split(',')[1] : '',
-                photo_url: '',
+                photo_url: uploadedPhotoUrl,
+                photo_urls: uploadedPhotoUrl ? [uploadedPhotoUrl] : [],
                 admin_notes: '',
                 completed_date: ''
             };
